@@ -34,6 +34,30 @@ Also, notice that rationals inside the quasiquoter are notated the same way that
 
 Currently there are several interfaces provided for playing back `Score`s of notes in different tuning systems. The most versatile of these is the function `sequenceNotes'`, and it's usage is documented in `tests/examples.hs`. However, given that xen-tools is currently in pre-release, this interface is liable to change.
 
+Transformations
+---------------
+
+Given some `Line note`s or `Score note`s, we can preform various transformations on them, which can be found in the `Scales.Generic` module provided by xentools. Notably, scores form a [`Semiring`](https://en.wikipedia.org/wiki/Semiring) (from `Data.Semiring` in the `semiring-simple` package). In other words, this means that we can combine two scores of the same type *in sequence* by using the `<.>` operator:
+
+```haskell
+-- two melodic fragments in 12 tone equal temperament
+a = [[line12| C4 2, D4 2, E4 2, C4 2 |]]
+b = [[line12| E4 2, F4 2, G4 4 |]]
+-- a line in 12 tone equal temperament where first "a" is played, immediately
+-- followed by "b"
+abSeq = a <.> b 
+```
+
+And we can play two scores of the same type *in parallel* by using `<+>`:
+
+```haskell
+c = [[line12| G4 1, A4 1, G4 1, F4 1, E4 2, C4 2 |]]
+d = [[line12| C4 2, G3 2, C4 4 |]]
+frereJacque = a <.> a <.> b <.> b <.> c <.> c <.> d <.> d
+frereJacqueRound = (rest 8 <.> frereJacque) <+> frereJacque 
+```
+
+
 Installation Instructions
 -------------------------
 
