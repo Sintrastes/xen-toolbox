@@ -68,14 +68,12 @@ centsToFreq (Cents c) = Frequency (2**(c/1200))
 type Octave = Int
 
 -- some useful type synonyms
-type Line note      = [(note, Rational)]
 type RelLine   g    = [(g, Rational)] 
 type RelMelody g    = [(g, Rational)]
 type RelChord  g    = ([g], Rational)
 type RelScore  g    = [RelLine g]
 type Melody    note = [(note,  Rational)]
 type Chord     note = ([note], Rational) 
-type Score     note = [Line note]
 
 class Group g => AbstractTemperament g where
   -- Note, there should be a distinction here
