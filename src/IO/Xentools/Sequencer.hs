@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, KindSignatures, TypeOperators, TypeFamilies, FlexibleInstances, DataKinds, ExtendedDefaultRules, UndecidableInstances, GADTs, AllowAmbiguousTypes, TypeInType, ScopedTypeVariables, FunctionalDependencies, QuasiQuotes, TemplateHaskell #-}
 
-module IO.VividPlaybackUtils where
+module IO.Xentools.Sequencer where
 
 -- sequenceNotesFluid
 -- sequenceNotes
