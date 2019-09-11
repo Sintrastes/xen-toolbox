@@ -51,9 +51,12 @@ abSeq = a <.> b
 And we can play two scores of the same type *in parallel* by using `<+>`:
 
 ```haskell
+-- some more melodic fragments
 c = [[line12| G4 1, A4 1, G4 1, F4 1, E4 2, C4 2 |]]
 d = [[line12| C4 2, G3 2, C4 4 |]]
+-- let's make them into a tune!
 frereJacque = a <.> a <.> b <.> b <.> c <.> c <.> d <.> d
+-- ... and make that tune a round!
 frereJacqueRound = (rest 8 <.> frereJacque) <+> frereJacque 
 ```
 
