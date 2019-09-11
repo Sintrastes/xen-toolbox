@@ -20,45 +20,59 @@ import Network.Simple.TCP
 import Scales.Generic
 import Control.Concurrent.Async
 import Scales.Transformations
+import Data.Semiring
 import Parsers.Eq22
 import Parsers.BP
 
 main = do
-     connect "localhost" "9988" $ \(socket1, addr1) ->
+      
+     a1 <- async $ connect "localhost" "9988" $ \(socket1, addr1) ->
                do loadSoundFont socket1 "test.sf3"
                   Vivid.wait 3
                   putStrLn "Playing Bohlen Pierce example score..."
-                  a <- async $ run $ sequenceNotes' socket1 exBPScore 80
-                  Vivid.wait 0.01
+                  a <- async $ do
+                     run $ sequenceNotes' socket1 exBPScore 80
+                     putStrLn "Done playing BP example score."
                   Control.Concurrent.Async.wait a
-     -- Control.Concurrent.Async.wait a1
-     --a2 <- async $ connect "localhost" "9988" $ \(socket1, addr1) ->
-     --            do loadSoundFont socket1 "test.sf3" 
-     --               putStrLn "Playing simple 22edo example score..."
-     --               run $ sequenceNotes' socket1 exscore 120
-     --Control.Concurrent.Async.wait a2
-     {- connect "localhost" "9988" $ \(socket1, addr1) ->
+     Control.Concurrent.Async.wait a1
+     
+      
+     a2 <- async $ connect "localhost" "9988" $ \(socket1, addr1) ->
+                 do loadSoundFont socket1 "test.sf3" 
+                    putStrLn "Playing simple 22edo example score..."
+                    run $ sequenceNotes' socket1 exscore1 120
+                    putStrLn "Done playing simple 22edo example score."
+     Control.Concurrent.Async.wait a2
+    
+     a3 <- async $ connect "localhost" "9988" $ \(socket1, addr1) ->
                  do loadSoundFont socket1 "test.sf3" 
                     putStrLn "Playing 22edo example score combining supercollider and fluidsynth outputs..."
+                    let tempo = 100
+                        -- A simple two-line motif which we will play on the electric piano
+                        motif1 = [ [line22| C2 2, C2 2, C2 2, C2 2 |] :: Line Note22,
+                                   [line22| E4 2, G4 2, E4 2, GEs4 2%3, GEsQes4 2%3, GEsQesQes4 2%3 |]]
+                        -- A simple motif moving between two chords which we will play on an organ
+                        motif2 = [[line22| E4 6, F4 2 |] :: Line Note22,
+                                  [line22| G3 6, G3 2 |],
+                                  [line22| B3 6, C4 2 |],
+                                  [line22| B4 8 |]]
                     run $
                       (sequenceNotesFluid socket1 4 "test.sf3"
-                       [ [line22| C2 2, C2 2, C2 2, C2 2 |] :: Line Note22,
-                         [line22| E4 2, G4 2, E4 2, GEs4 2%3, GEsQes4 2%3, GEsQesQes4 2%3 |]]
-                       127
+                       -- insequence
+                       (motif1 <.> motif1)
+                       tempo
                        70
                        0)
-                  --   -- I think maybe the server gets consused (race condition?)
+                  --   -- I think maybe the server gets confused (race condition?)
                   --   -- when I try to send too much on one connection?
                   --   -- (I don't actually think this is an issue at this point)
                   --   -- The issue comes when we repeat -- so this should be
                   --   -- handled internally
                       <> (sequenceNotesFluid socket1 17 "test.sf3"
-                        [[line22| E4 6, F4 2 |] :: Line Note22,
-                         [line22| G3 6, G3 2 |],
-                         [line22| B3 6, C4 2 |],
-                         [line22| B4 8 |]]
-                         127
+                        (motif2 <.> motif2)
+                         tempo
                          70
                          2)
                     Vivid.wait 1
--}
+     Control.Concurrent.Async.wait a3       
+

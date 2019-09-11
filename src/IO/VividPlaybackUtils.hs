@@ -94,6 +94,20 @@ data Inst = VividSynth (Vol -> SynthDef '["note"]) | FluidInst String Int
 data Line' note = Line' Inst [(Maybe (note, Vol), Duration)]
 type Score' note = [Line' note]
 
+noteAtVolume :: TuningSystem note g
+  => Vol
+  -> (note, Duration)
+  -> (Maybe (note, Vol), Duration)
+noteAtVolume v (n, d) = ((Just (n, v)), d)
+
+withInst :: TuningSystem note g
+  => Vol
+  -> Inst
+  -> Score note
+  -> Score' note
+withInst vol inst ls = map (toLine' vol inst) ls
+  where toLine' vol inst notes = Line' inst (map (noteAtVolume vol) notes)
+
 atVolume :: TuningSystem note g
   => Vol
   -> [(note, Duration)]
@@ -108,7 +122,18 @@ exBPScore = [Line' (VividSynth tone)
              Line' (VividSynth tone)
                    (atVolume 1 ([lineBP| G3 4, J3 4, E3 5 |]))]
 
-exscore = [Line' (VividSynth additiveSynth)
+-- The same example, but written with the withInst function
+-- exscore1' :: Score Note22 
+{- 
+exscore1' = [  withInst 0.3 (VividSynth additiveSynth) ([line22| C4 2, D4 2, EQes4 1, BQes3 1, C4 4, C4 2, D4 2, EQes4 1, BQes3 1, C4 8 |] :: Line Note22)
+             , withInst 0.5 (VividSynth tone)          ([line22| C5 3, D5 1, EQes5 4, F5 2, DQes5 2, EQes5 4, EQes4 8 |] :: Line Note22)
+             , withInst 0.4 (FluidInst "test.sf3" 17)  ([line22| C4 2, C4 2, C4 2, C4 2, C4 16 |] :: Line Note22)
+             , withInst 0.4 (FluidInst "test.sf3" 17)  ([line22| EQes3 2, EQes3 2, EQes3 2, EQes3 2, EQes3 16 |] :: Line Note22)
+             , withInst 0.4 (FluidInst "test.sf3" 17)  ([line22| G4 2, G4 2, G4 2, G4 2, G4 16 |] :: Line Note22)
+             ] 
+-}
+
+exscore1 = [Line' (VividSynth additiveSynth)
                  (atVolume 0.3 ([line22| C4 2, D4 2, EQes4 1, BQes3 1, C4 4, C4 2, D4 2, EQes4 1, BQes3 1, C4 8 |] :: Line Note22) ),
            Line' (VividSynth tone)
                  (atVolume 0.5 ([line22| C5 3, D5 1, EQes5 4, F5 2, DQes5 2, EQes5 4, EQes4 8 |])),
@@ -122,6 +147,21 @@ exscore = [Line' (VividSynth additiveSynth)
            --      (atVolume 1 ([line22| C6 4, EQes6 4, F6 4, DQes6 4, C6 8  |]))
           ]
 
+exscore2 = [Line' (VividSynth additiveSynth)
+                 (atVolume 0.3 ([line22| C4 2, D4 2, EQes4 1, BQes3 1, C4 4, C4 2, D4 2, EQes4 1, BQes3 1, C4 8 |] :: Line Note22) ),
+           Line' (VividSynth tone)
+                 (atVolume 0.5 ([line22| C5 3, D5 1, EQes5 4, F5 2, DQes5 2, EQes5 4, EQes4 8 |])),
+           Line' (FluidInst "test.sf3" 17)
+                 (atVolume 0.4 ([line22| C4 2, C4 2, C4 2, C4 2, C4 16 |])),
+           Line' (FluidInst "test.sf3" 17)
+                 (atVolume 0.4 ([line22| EQes3 2, EQes3 2, EQes3 2, EQes3 2, EQes3 16 |])),
+           Line' (FluidInst "test.sf3" 17)
+                 (atVolume 0.4 ([line22| G4 2, G4 2, G4 2, G4 2, G4 16 |]))
+           --Line' (FluidInst "test.sf3" 9)
+           --      (atVolume 1 ([line22| C6 4, EQes6 4, F6 4, DQes6 4, C6 8  |]))
+          ]
+
+
 sequenceNotes' :: TuningSystem note g
   => Socket
   -> Score' note
@@ -130,10 +170,13 @@ sequenceNotes' :: TuningSystem note g
 sequenceNotes' socket score tempo = 
    go score 0
        -- This preforms each line at a different channel
-    where go (l:ls) n =
+    where go ls n = Preformance $ do mapConcurrently (\(l,i) -> run $ preformLine socket l i tempo) 
+                                       (zip ls [n..n+(length ls)])
+                                     return ()
+          {- go (l:ls) n =
             (preformLine socket l n tempo)
                      <> go ls (n+1)
-          go [] n = mempty
+          go [] n = mempty -}
 
 preformLine :: TuningSystem note g
   => Socket
@@ -157,9 +200,11 @@ sequenceLineFluid :: TuningSystem note g
 sequenceLineFluid socket (sfpath, prog) line n bpm =
   Preformance (forM_ line (\(noteType, duration) ->
       case noteType of
-           Just (note, vol) -> do setProgram  socket n prog 
+           Just (note, vol) -> do putStrLn "Sequencing a fluid note"
+                                  setProgram  socket n prog 
                                   microNoteOn socket n (nfreq note) (volToVel vol)
                                   Vivid.wait $ (fromRational duration) * (1/bps)
+                                  putStrLn "Sequencing a fluid note (done waiting)"
                                   microNoteOff socket n (nfreq note)
            Nothing   -> do Vivid.wait $ (fromRational duration) * (1/bps)))
   where bps = (bpm/60) :: Double
@@ -174,9 +219,11 @@ sequenceLineVivid syn line bpm = run line
         run line = Preformance
             (forM_ line (\(noteType, duration) ->
                    case noteType of
-                      Just (note, vol) -> do s <- synth (syn vol) (50::I "note")
+                      Just (note, vol) -> do putStrLn "Sequencing a Vivid note"
+                                             s <- synth (syn vol) (50::I "note")
                                              set s (toI (nfreq note) :: I "note")
                                              Vivid.wait $ (fromRational duration) * (1/bps)
+                                             putStrLn "Sequencing a Vivid note (done waiting)"
                                              free s
                       Nothing -> do Vivid.wait $ (fromRational duration) * (1/bps)))
 
