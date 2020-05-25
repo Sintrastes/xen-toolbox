@@ -31,7 +31,7 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.11
+      base
     , groups
     , async             
     , hmidi
@@ -54,7 +54,7 @@ Executable examples
    hs-source-dirs:
        tests
    build-depends:
-       base >=4.11               
+       base               
      , xentoolbox
      , vivid
      , bytestring
@@ -69,7 +69,7 @@ test-suite my-test
       tests
   build-depends:
       QuickCheck
-    , base >=4.11
+    , base
     , groups
     , hmidi
     , xentoolbox
