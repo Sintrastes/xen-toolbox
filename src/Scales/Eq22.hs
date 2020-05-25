@@ -1,4 +1,4 @@
-module Scales.Data22 where
+module Scales.Eq22 where
 
 -- Note: This is some old code that I've written. I'll want to eventually write something
 -- more generic than this.

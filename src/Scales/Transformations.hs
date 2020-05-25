@@ -28,6 +28,10 @@ instance Semigroup Preformance where
 instance Monoid    Preformance where
   mempty = Preformance (wait 0)
 
+
+-- instance TuningSystem note g => Semiring [Line note] where
+--  xs <.> ys = zipWith (++) xs ys
+
 instance TuningSystem note g => Semiring (Score note) where
 -- This does not work for infinite lists
   -- Is there a better way to implement this?
@@ -59,7 +63,10 @@ line1 = [[cq,eq,cq,eq,cq,eq,cq,eq]]
 line2 :: Score Note22
 line2 = [[gq,gq,gq,gq,gq,gq,gq,gq]]
 
+inparallel :: Score Note22
 inparallel = line1 <+> line2
+
+insequence :: Score Note22
 insequence = line1 <.> line2
 
 -- instance (TuningSystem note g) => Semiring (Score' note) where

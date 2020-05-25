@@ -57,6 +57,7 @@ Executable examples
        base               
      , xentoolbox
      , vivid
+     , semiring-simple
      , bytestring
      , network-simple
      , async     
